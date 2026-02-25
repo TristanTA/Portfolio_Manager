@@ -8,6 +8,13 @@ from langchain_core.tools import tool
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 
+from github_tools import (
+    github_list_tree,
+    github_get_file,
+    github_propose_change,
+)
+import base64
+
 class MainAgent:
     def __init__(self):
         self.system_msg = self.get_system_message()
@@ -24,7 +31,13 @@ class MainAgent:
         self.openrouter_base_url = "https://openrouter.ai/api/v1"
         self.openai_api_key = os.environ["OPENAI_API_KEY"]
 
-        self.tools = [github_repo_info, github_search_repos]
+        self.tools = [
+            github_repo_info,
+            github_search_repos,
+            repo_overview,
+            read_repo_file,
+            propose_repo_change,
+        ]        
         self.model = self._make_llm(self.models[self.model_idx])
         self.agent = create_agent(
             model=self.model,
@@ -330,3 +343,73 @@ def github_search_repos(query: str) -> list:
         }
         for r in items
     ]
+
+@tool
+def repo_overview(owner: str, repo: str, ref: str = "main") -> dict:
+    """
+    Returns a summarized file tree and key repo metadata.
+    Used for planning changes.
+    """
+    tree_data = github_list_tree(owner, repo, ref, recursive=True)
+
+    if "error" in tree_data:
+        return tree_data
+
+    tree = tree_data.get("tree", [])
+
+    files = [
+        item["path"]
+        for item in tree
+        if item.get("type") == "blob"
+    ]
+
+    return {
+        "repo": f"{owner}/{repo}",
+        "branch": ref,
+        "file_count": len(files),
+        "sample_files": files[:50],  # prevent overload
+    }
+
+@tool
+def read_repo_file(owner: str, repo: str, path: str, ref: str = "main") -> dict:
+    """
+    Reads a file from a repository and returns decoded content.
+    """
+    file_data = github_get_file(owner, repo, path, ref)
+
+    if "error" in file_data:
+        return file_data
+
+    content_b64 = file_data.get("content", "")
+    if not content_b64:
+        return {"error": "No content returned."}
+
+    decoded = base64.b64decode(content_b64).decode("utf-8", errors="ignore")
+
+    return {
+        "path": path,
+        "sha": file_data.get("sha"),
+        "content": decoded,
+    }
+
+@tool
+def propose_repo_change(
+    owner: str,
+    repo: str,
+    changes: list,
+    pr_title: str,
+    pr_body: str,
+    base_branch: str = "main",
+) -> dict:
+    """
+    Creates a new branch, applies file changes, and opens a PR.
+    Requires review before merge.
+    """
+    return github_propose_change(
+        owner=owner,
+        repo=repo,
+        changes=changes,
+        pr_title=pr_title,
+        pr_body=pr_body,
+        base_branch=base_branch,
+    )

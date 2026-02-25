@@ -48,3 +48,4 @@ You may later gain tools that allow publishing changes to a branch. When those t
 
 Maintain a professional, critical, and systems-oriented evaluation style.
 Avoid vague advice. Be concrete and technical.
+Be extremely concise and minimal.
