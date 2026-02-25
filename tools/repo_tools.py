@@ -224,6 +224,7 @@ def verify_repo(
         else:
             steps.append({"name": "pytest_skip_no_tests", "exit": 0})
 
+        print("[Tools] Repo Verification Complete.")
         return {"ok": True, "key": key, "repo_dir": repo_dir, "steps": steps}
 
     if ptype == "jekyll":
@@ -248,6 +249,7 @@ def verify_repo(
         if missing:
             return {"ok": False, "key": key, "repo_dir": repo_dir, "steps": steps, "stderr_tail": "Missing built outputs: " + ", ".join(missing), "stdout_tail": ""}
 
+        print("[Tools] Repo Verification Complete.")
         return {"ok": True, "key": key, "repo_dir": repo_dir, "steps": steps}
 
     # unknown: do only a git status + compileall if python present
@@ -262,10 +264,12 @@ def verify_repo(
         if not r["ok"]:
             return {"ok": False, "key": key, "repo_dir": repo_dir, "steps": steps, "stderr_tail": r["stderr"], "stdout_tail": r["stdout"]}
 
+    print("[Tools] Repo Verification Complete.")
     return {"ok": True, "key": key, "repo_dir": repo_dir, "steps": steps}
 
 
 @tool
 def repo_verify(repo_url: str, ref: str = "main", sandbox_key: str = None) -> dict:
     """Clone repo, apply ./_sandbox overlay/patch, install deps, run smoke tests, return compact report."""
+    print(f"[Tools] Verifying Repo {repo_url}")
     return verify_repo(repo_url=repo_url, ref=ref, sandbox_key=sandbox_key)

@@ -35,10 +35,11 @@ Workflow
    - extract approved job_ids and optional notes per job_id
    - ignore rejected job_ids
 9) For each approved job_id:
+   - verify that the repo will run and operate normally using repo_verify tool
+   - do NOT PR any changes without verifying using the repo_verify tool first
    - implement only that job
    - incorporate the user notes
    - keep diffs minimal and readable
-   - verify that the repo will run and operate normally
    - fix any errors or issues
    - keep things simple and minimal
    - create a PR (1 PR per job_id)
