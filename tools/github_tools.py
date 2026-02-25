@@ -177,3 +177,75 @@ def github_propose_change(
 
     except Exception as e:
         return {"ok": False, "error": f"github_propose_change error: {type(e).__name__}: {e}"}
+    
+@tool
+def github_create_branch(owner: str, repo: str, base_branch: str, new_branch: str) -> dict:
+    """
+    Create a new branch from an existing base branch.
+
+    Args:
+        owner: str
+        repo: str
+        base_branch: str (e.g., "main")
+        new_branch: str (e.g., "audit/job-123")
+
+    Returns:
+        dict: {"ok": True, ...} or {"ok": False, "error": "..."}
+    """
+    try:
+        # 1) get base branch SHA
+        ref_url = f"{GITHUB_API}/repos/{owner}/{repo}/git/ref/heads/{base_branch}"
+        r = requests.get(ref_url, headers=gh_headers(), timeout=20)
+        if r.status_code != 200:
+            return {"ok": False, "error": f"github_create_branch error: HTTP {r.status_code}: {r.text}"}
+        base_sha = (r.json() or {}).get("object", {}).get("sha")
+
+        # 2) create new ref
+        create_url = f"{GITHUB_API}/repos/{owner}/{repo}/git/refs"
+        payload = {"ref": f"refs/heads/{new_branch}", "sha": base_sha}
+        c = requests.post(create_url, headers=gh_headers(), json=payload, timeout=20)
+
+        if c.status_code not in (200, 201):
+            # If already exists, treat as ok
+            if c.status_code == 422 and "Reference already exists" in c.text:
+                return {"ok": True, "branch": new_branch, "created": False}
+            return {"ok": False, "error": f"github_create_branch error: HTTP {c.status_code}: {c.text}"}
+
+        return {"ok": True, "branch": new_branch, "created": True}
+    except Exception as e:
+        return {"ok": False, "error": f"github_create_branch error: {type(e).__name__}: {e}"}
+
+
+@tool
+def github_create_pull_request(
+    owner: str,
+    repo: str,
+    head_branch: str,
+    base_branch: str,
+    title: str,
+    body: str = "",
+) -> dict:
+    """
+    Create a pull request.
+
+    Args:
+        owner: str
+        repo: str
+        head_branch: str (branch with changes)
+        base_branch: str (target branch, e.g., "main")
+        title: str
+        body: str (optional)
+
+    Returns:
+        dict
+    """
+    try:
+        url = f"{GITHUB_API}/repos/{owner}/{repo}/pulls"
+        payload = {"title": title, "head": head_branch, "base": base_branch, "body": body}
+        r = requests.post(url, headers=gh_headers(), json=payload, timeout=20)
+        if r.status_code not in (200, 201):
+            return {"ok": False, "error": f"github_create_pull_request error: HTTP {r.status_code}: {r.text}"}
+        data = r.json()
+        return {"ok": True, "number": data.get("number"), "url": data.get("html_url")}
+    except Exception as e:
+        return {"ok": False, "error": f"github_create_pull_request error: {type(e).__name__}: {e}"}
