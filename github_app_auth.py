@@ -15,7 +15,7 @@ def _get_env(name: str) -> str:
 
 def _github_app_jwt() -> str:
     app_id = _get_env("GH_APP_ID")
-    private_key = _get_env("GH_APP_PRIVATE_KEY").replace("\\n", "\n")
+    private_key = _get_env("GH_APP_PRIVATE_KEY")
 
     now = int(time.time())
     payload = {
