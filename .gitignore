@@ -1,3 +1,4 @@
 .env
 __pycache__
 memory.json
+memory\update_id.txt

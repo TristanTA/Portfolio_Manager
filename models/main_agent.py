@@ -35,7 +35,7 @@ class MainAgent:
         # Router (specialized sub-agents)
         self.router = AgentRouter()
         @tool
-        def call_agent_router(self, content: str) -> str:
+        def call_agent_router(content: str) -> str:
             """
             Get code or reasoning from a specialized LLM
             Args: content: str (prompt for reasoning or code agent)

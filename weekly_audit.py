@@ -38,9 +38,9 @@ Workflow
    - implement only that job
    - incorporate the user notes
    - keep diffs minimal and readable
-   - Verify that the repo will run and operate normally
-   - Fix any errors or issues
-   - Kepe things simple and minimal
+   - verify that the repo will run and operate normally
+   - fix any errors or issues
+   - keep things simple and minimal
    - create a PR (1 PR per job_id)
    - send a Telegram message with the PR link + what changed
 10) If no jobs are approved before timeout, do nothing else.
