@@ -1,19 +1,17 @@
 import html
 import requests
 import os
-
 from langchain.tools import tool
 
+
 @tool
-def telegram_send(args: dict) -> dict:
+def telegram_send(text: str) -> dict:
     """
     Send a message via Telegram bot.
     Args:
-        args: {
-            "text": str
-        }
+        text: str
     Returns:
-        dict: {"ok": True, ...} or {"ok": False, "error": "..."}
+        dict
     """
     try:
         token = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -22,19 +20,17 @@ def telegram_send(args: dict) -> dict:
         if not token or not chat_id:
             return {
                 "ok": False,
-                "error": "telegram_send error: EnvironmentError: Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID",
+                "error": "telegram_send error: Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID",
             }
 
-        text = args.get("text")
         if not text:
             return {
                 "ok": False,
-                "error": "telegram_send error: ValueError: 'text' is required",
+                "error": "telegram_send error: 'text' is required",
             }
 
         url = f"https://api.telegram.org/bot{token}/sendMessage"
 
-        parse_mode = "HTML"
         safe_text = f"<pre>{html.escape(text)}</pre>"
 
         r = requests.post(
@@ -42,7 +38,7 @@ def telegram_send(args: dict) -> dict:
             json={
                 "chat_id": chat_id,
                 "text": safe_text,
-                "parse_mode": parse_mode,
+                "parse_mode": "HTML",
             },
             timeout=20,
         )

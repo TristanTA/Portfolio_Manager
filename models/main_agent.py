@@ -5,6 +5,7 @@ from typing import Optional
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
+from langchain.tools import tool
 
 from models.agent_router import AgentRouter
 from tools.fs_tools import fs_read, fs_write, fs_list_dir, fs_exists, fs_delete
@@ -32,9 +33,18 @@ class MainAgent:
 
         # Router (specialized sub-agents)
         self.router = AgentRouter()
+        @tool
+        def call_agent_router(self, content: str) -> str:
+            """
+            Get code or reasoning from a specialized LLM
+            Args: content: str (prompt for reasoning or code agent)
+            Returns: str (response from LLM)
+            """
+            response = self.router.message(content)
+            return response
 
         # Tools (new tool system)
-        self.tools = [fs_read, fs_write, fs_list_dir, fs_exists, fs_delete, github_list_tree, github_read_text_file, github_search_code, github_propose_change, memory_load, memory_save, telegram_send]
+        self.tools = [call_agent_router, fs_read, fs_write, fs_list_dir, fs_exists, fs_delete, github_list_tree, github_read_text_file, github_search_code, github_propose_change, memory_load, memory_save, telegram_send]
 
         # Agent
         self.model = self._make_llm(self.models[self.model_idx])

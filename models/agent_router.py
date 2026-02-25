@@ -5,7 +5,6 @@ from models.reason_agent import message_reasoning_agent
 
 from langchain.tools import tool
 
-@tool
 class AgentRouter:
     """
     Simple router:
