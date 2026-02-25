@@ -11,7 +11,7 @@ from models.agent_router import AgentRouter
 from tools.fs_tools import fs_read, fs_write, fs_list_dir, fs_exists, fs_delete
 from tools.github_tools import github_list_tree, github_read_text_file, github_search_code, github_propose_change
 from tools.memory_tools import memory_load, memory_save
-from tools.notify_tools import telegram_send
+from tools.notify_tools import telegram_send, telegram_get_response
 
 class MainAgent:
     def __init__(self):
@@ -44,7 +44,7 @@ class MainAgent:
             return response
 
         # Tools (new tool system)
-        self.tools = [call_agent_router, fs_read, fs_write, fs_list_dir, fs_exists, fs_delete, github_list_tree, github_read_text_file, github_search_code, github_propose_change, memory_load, memory_save, telegram_send]
+        self.tools = [call_agent_router, fs_read, fs_write, fs_list_dir, fs_exists, fs_delete, github_list_tree, github_read_text_file, github_search_code, github_propose_change, memory_load, memory_save, telegram_send, telegram_get_response]
 
         # Agent
         self.model = self._make_llm(self.models[self.model_idx])
