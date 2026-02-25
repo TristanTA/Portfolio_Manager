@@ -1,16 +1,15 @@
-from openai import OpenAI
+from __future__ import annotations
 
+from openai import OpenAI
 from langchain_core.tools import tool
 
-@tool
-def message_code_agent(agent_msg: str) -> str:
-    """
-    Agent specific to writing code. Input prompt of what code is to be written. Output is str. 
-    """
-    client = OpenAI()
 
-    response = client.responses.create(
+@tool("message_code_agent")
+def message_code_agent(agent_msg: str) -> str:
+    """Write or modify code. Input: plain English request. Output: code-focused answer."""
+    client = OpenAI()
+    resp = client.responses.create(
         model="gpt-5-codex",
-        input=agent_msg
+        input=agent_msg,
     )
-    return response.output_text
+    return resp.output_text or ""

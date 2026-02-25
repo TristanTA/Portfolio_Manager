@@ -1,16 +1,33 @@
-from langchain.agents import create_agent
+from __future__ import annotations
 
 from models.code_agent import message_code_agent
 from models.reason_agent import message_reasoning_agent
 
-class AgentRouter:
-    def __init__(self):
-        self.agent = create_agent(
-            model="gpt-5-nano",
-            tools=[message_code_agent, message_reasoning_agent],
-            system_prompt="You are an agentic router. Based on the agent message provided to you, choose the best tool."
-        )
+from langchain.tools import tool
 
+@tool
+class AgentRouter:
+    """
+    Simple router:
+    - If the user is asking for code edits/snippets/files -> code agent
+    - Otherwise -> reasoning agent
+    """
+
+    def __init__(self):
+        pass
+    
     def message(self, agent_msg: str) -> str:
-        response = self.agent.invoke(agent_msg)
-        return response
+        text = (agent_msg or "").lower()
+
+        code_signals = [
+            "write code", "implement", "refactor", "function", "class", "bug", "traceback",
+            "error:", "stack trace", "python", "typescript", "javascript", "langchain",
+            "langgraph", "pydantic", "file:", ".py", ".ts", ".js", "diff", "patch",
+            "drop-in", "module", "import", "pip", "venv",
+        ]
+
+        wants_code = any(s in text for s in code_signals)
+        if wants_code:
+            return message_code_agent.run(agent_msg)
+
+        return message_reasoning_agent.run(agent_msg)
