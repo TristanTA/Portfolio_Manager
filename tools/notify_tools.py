@@ -15,6 +15,7 @@ def telegram_send(text: str) -> dict:
     Returns:
         dict
     """
+    print("[Tools] Notifying User of:", text)
     try:
         token = os.environ.get("TELEGRAM_BOT_TOKEN")
         chat_id = os.environ.get("TELEGRAM_CHAT_ID")
@@ -78,6 +79,7 @@ def telegram_get_response(
           - on timeout: {"ok": False, "timeout": True, "last_update_id": int}
           - on error:   {"ok": False, "error": "..."}
     """
+    print("[Tools] Awaiting Telegram Response . . .")
     try:
         token = os.environ.get("TELEGRAM_BOT_TOKEN")
         chat_id_env = os.environ.get("TELEGRAM_CHAT_ID")
@@ -127,11 +129,13 @@ def telegram_get_response(
 
                 if require_chat_id and chat_id_env and chat_id != str(chat_id_env):
                     continue
-
+                
+                print("[Tools] Message Received.")
                 return {"ok": True, "update_id": last_update_id, "text": text, "chat_id": chat_id}
 
             time.sleep(max(1, int(poll_interval_seconds)))
 
+        print(f"[Tools] Telegram Timeout - No Response within {timeout_seconds / 60} minutes.")
         return {"ok": False, "timeout": True, "last_update_id": last_update_id}
 
     except Exception as e:

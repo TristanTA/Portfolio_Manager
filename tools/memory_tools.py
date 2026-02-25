@@ -12,6 +12,7 @@ def memory_load(path: str) -> dict:
     Returns:
         dict: {"ok": True, ...} or {"ok": False, "error": "..."}
     """
+    print("[Tools] Loading Memory . . .")
     try:
         if not os.path.exists(path):
             base = {"version": 1, "runs": [], "items": []}
@@ -40,6 +41,7 @@ def memory_save(path: str, data: dict) -> dict:
     Returns:
         dict: {"ok": True, ...} or {"ok": False, "error": "..."}
     """
+    print("[Tools] Saving Memory . . .")
     try:
         if not path:
             return {"ok": False, "error": "memory_save error: ValueError: 'path' is required"}

@@ -16,6 +16,7 @@ class AgentRouter:
         pass
     
     def message(self, agent_msg: str) -> str:
+        print("[Tools] Messaging Router")
         text = (agent_msg or "").lower()
 
         code_signals = [
@@ -27,6 +28,8 @@ class AgentRouter:
 
         wants_code = any(s in text for s in code_signals)
         if wants_code:
+            print("[Tools] Using Coding Agent")
             return message_code_agent.run(agent_msg)
 
+        print("[Tools] Using Reasoning Agent")
         return message_reasoning_agent.run(agent_msg)

@@ -3,7 +3,6 @@ from pathlib import Path
 
 from langchain.tools import tool
 
-
 @tool
 def fs_read(path_string: str) -> str:
     """
@@ -11,6 +10,7 @@ def fs_read(path_string: str) -> str:
     Args: path_string: str (file to read)
     Returns: package: str (entire file content)
     """
+    print(f"[Tools] File System Read {path}")
     try:
         path = Path(path_string)
         with open(file=path, mode="r", encoding="utf-8") as file:
@@ -30,6 +30,7 @@ def fs_write(path_string: str, mode: str, content: str) -> Optional[str]:
         content: str (content to add)
     Returns: None if success, otherwise str error message
     """
+    print(f"[Tools] File System Write {path}")
     try:
         path = Path(path_string)
         with open(file=path, mode=mode, encoding="utf-8") as file:
@@ -48,6 +49,7 @@ def fs_list_dir(path_string: str) -> str:
     Returns:
         str: newline-separated entries or error message
     """
+    print(f"[Tools] File System List {path}")
     try:
         path = Path(path_string)
         if not path.exists():
@@ -70,6 +72,7 @@ def fs_exists(path_string: str) -> str:
     Returns:
         str: "true" / "false" or error message
     """
+    print(f"[Tools] File System Exists {path}")
     try:
         path = Path(path_string)
         return "true" if path.exists() else "false"
@@ -86,6 +89,7 @@ def fs_delete(path_string: str) -> Optional[str]:
     Returns:
         None if success, otherwise str error message
     """
+    print(f"[Tools] File System Delete {path}")
     try:
         path = Path(path_string)
 

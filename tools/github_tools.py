@@ -16,6 +16,7 @@ def github_list_tree(owner: str, repo: str, path: str = "", branch: str = "main"
     Returns:
         dict: {"ok": True, ...} or {"ok": False, "error": "..."}
     """
+    print(f"[Tools] Listing GitHub Tree {owner, repo}")
     try:
         url = f"{GITHUB_API}/repos/{owner}/{repo}/contents/{path}"
         resp = requests.get(url, headers=gh_headers(), params={"ref": branch})
@@ -39,6 +40,7 @@ def github_read_text_file(owner: str, repo: str, path: str, branch: str = "main"
     Returns:
         dict
     """
+    print(f"[Tools] Reading GitHub Text File {owner, repo, path}")
     try:
         url = f"{GITHUB_API}/repos/{owner}/{repo}/contents/{path}"
         resp = requests.get(url, headers=gh_headers(), params={"ref": branch})
@@ -101,6 +103,7 @@ def github_search_code(query: str, owner: str = "", repo: str = "") -> dict:
             repo="tristan-allen-portfolio"
         )
     """
+    print(f"[Tools] Searching GitHub Code {query, owner, repo}")
     try:
         if owner and repo:
             query = f"{query} repo:{owner}/{repo}"
@@ -143,6 +146,7 @@ def github_propose_change(
           - success: {"ok": True, "data": <GitHub API response>}
           - failure: {"ok": False, "error": "<error message>"}
     """
+    print(f"[Tools] Proposing GitHub Change {owner, repo, message}")
     try:
         url = f"{GITHUB_API}/repos/{owner}/{repo}/contents/{path}"
 
