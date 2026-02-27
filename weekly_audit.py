@@ -75,6 +75,7 @@ Constraints
 - Do not add new dependencies unless absolutely required for a fix.
 - Do not do large rewrites. Keep diffs small and readable.
 - Do not bundle jobs: one PR per approved job_id only.
+- Prefer Python-based file scanning, avoid rg/grep/find, use git only if needed.
 """
 
 def main():

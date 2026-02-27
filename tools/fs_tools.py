@@ -1,9 +1,9 @@
-from typing import Optional
-from pathlib import Path
+from __future__ import annotations
 import os
-import time
 import subprocess
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
+from pathlib import Path
+import time
 
 from langchain.tools import tool
 
@@ -13,93 +13,111 @@ DEFAULT_TIMEOUT_S = 120
 ALLOWED_CWD_ROOT = os.path.abspath(".")  # restrict to agent workspace
 
 
-def _truncate(s: str, limit: int = MAX_OUTPUT_CHARS) -> str:
-    if s is None:
-        return ""
-    if len(s) <= limit:
-        return s
-    # keep tail (usually where errors are)
-    tail = s[-limit:]
-    return f"[truncated {len(s) - limit} chars]\n{tail}"
-
-
-def _safe_cwd(cwd: Optional[str]) -> str:
-    if not cwd:
-        return ALLOWED_CWD_ROOT
-    abs_cwd = os.path.abspath(cwd)
-    root = ALLOWED_CWD_ROOT
-    # ensure cwd is within workspace
-    if abs_cwd == root or abs_cwd.startswith(root + os.sep):
-        return abs_cwd
-    raise ValueError(f"cwd is outside allowed workspace: {abs_cwd}")
-
-
-def shell_run(
-    cmd: List[str],
-    cwd: Optional[str] = None,
-    timeout_s: Optional[int] = None,
-    env: Optional[Dict[str, str]] = None,
-) -> Dict[str, Any]:
+@tool
+def shell_run_tool(cmd: Union[str, List[str]], cwd: Optional[str] = None, timeout_s: int = 120) -> Dict[str, Any]:
     """
-    Run a command with no shell. Returns truncated stdout/stderr.
-    Minimal + portable (Windows/Linux).
+    Run a shell command safely and return structured output.
+    Never raises FileNotFoundError (WinError 2); returns ok=False instead.
     """
-    if not isinstance(cmd, list) or not cmd or not all(isinstance(x, str) for x in cmd):
-        raise ValueError("cmd must be a non-empty list[str]")
-
-    safe_cwd = _safe_cwd(cwd)
-    to = int(timeout_s or DEFAULT_TIMEOUT_S)
-
-    # Minimal environment: inherit current env, optionally add overrides
-    run_env = os.environ.copy()
-    if env:
-        for k, v in env.items():
-            if not isinstance(k, str) or not isinstance(v, str):
-                raise ValueError("env must be dict[str,str]")
-            run_env[k] = v
-
-    t0 = time.perf_counter()
     try:
-        p = subprocess.run(
+        # If cmd is a string, use shell=True so Windows can resolve built-ins and spaced commands.
+        use_shell = isinstance(cmd, str)
+
+        completed = subprocess.run(
             cmd,
-            cwd=safe_cwd,
-            env=run_env,
+            cwd=cwd,
+            timeout=timeout_s,
             capture_output=True,
             text=True,
-            timeout=to,
-            shell=False,
+            shell=use_shell,
         )
-        dur_ms = int((time.perf_counter() - t0) * 1000)
-        out = p.stdout or ""
-        err = p.stderr or ""
+
         return {
-            "ok": p.returncode == 0,
-            "exit_code": p.returncode,
-            "stdout": _truncate(out),
-            "stderr": _truncate(err),
-            "duration_ms": dur_ms,
-            "cwd": safe_cwd,
+            "ok": completed.returncode == 0,
+            "returncode": completed.returncode,
+            "stdout": completed.stdout,
+            "stderr": completed.stderr,
             "cmd": cmd,
+            "cwd": cwd,
+            "shell": use_shell,
         }
-    except subprocess.TimeoutExpired as e:
-        dur_ms = int((time.perf_counter() - t0) * 1000)
-        out = (e.stdout or "") if isinstance(e.stdout, str) else ""
-        err = (e.stderr or "") if isinstance(e.stderr, str) else ""
+
+    except FileNotFoundError as e:
+        # This is your WinError 2 case: executable not found.
         return {
             "ok": False,
-            "exit_code": 124,
-            "stdout": _truncate(out),
-            "stderr": _truncate(err) + "\n[timeout]",
-            "duration_ms": dur_ms,
-            "cwd": safe_cwd,
+            "error": f"FileNotFoundError: {e}",
             "cmd": cmd,
+            "cwd": cwd,
+            "hint": "Executable not found on PATH. Agent likely called a unix tool (rg/grep/ls) or cmd was passed as a single string without shell.",
+        }
+    except subprocess.TimeoutExpired as e:
+        return {
+            "ok": False,
+            "error": f"TimeoutExpired: {e}",
+            "cmd": cmd,
+            "cwd": cwd,
+        }
+    except Exception as e:
+        return {
+            "ok": False,
+            "error": f"{type(e).__name__}: {e}",
+            "cmd": cmd,
+            "cwd": cwd,
         }
 
-@tool
-def shell_run_tool(cmd: list, cwd: str = None, timeout_s: int = 120) -> dict:
-    """Run a command in the agent workspace. cmd must be list of strings."""
-    return shell_run(cmd=cmd, cwd=cwd, timeout_s=timeout_s)
+# Non tool-reference verison
+def shell_run(cmd: Union[str, List[str]], cwd: Optional[str] = None, timeout_s: int = 120) -> Dict[str, Any]:
+    """
+    Run a shell command safely and return structured output.
+    Never raises FileNotFoundError (WinError 2); returns ok=False instead.
+    """
+    try:
+        # If cmd is a string, use shell=True so Windows can resolve built-ins and spaced commands.
+        use_shell = isinstance(cmd, str)
 
+        completed = subprocess.run(
+            cmd,
+            cwd=cwd,
+            timeout=timeout_s,
+            capture_output=True,
+            text=True,
+            shell=use_shell,
+        )
+
+        return {
+            "ok": completed.returncode == 0,
+            "returncode": completed.returncode,
+            "stdout": completed.stdout,
+            "stderr": completed.stderr,
+            "cmd": cmd,
+            "cwd": cwd,
+            "shell": use_shell,
+        }
+
+    except FileNotFoundError as e:
+        # This is your WinError 2 case: executable not found.
+        return {
+            "ok": False,
+            "error": f"FileNotFoundError: {e}",
+            "cmd": cmd,
+            "cwd": cwd,
+            "hint": "Executable not found on PATH. Agent likely called a unix tool (rg/grep/ls) or cmd was passed as a single string without shell.",
+        }
+    except subprocess.TimeoutExpired as e:
+        return {
+            "ok": False,
+            "error": f"TimeoutExpired: {e}",
+            "cmd": cmd,
+            "cwd": cwd,
+        }
+    except Exception as e:
+        return {
+            "ok": False,
+            "error": f"{type(e).__name__}: {e}",
+            "cmd": cmd,
+            "cwd": cwd,
+        }
 
 @tool
 def fs_read(path_string: str) -> str:
