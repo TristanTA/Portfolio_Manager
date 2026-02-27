@@ -57,6 +57,8 @@ class MainAgent:
         self.model = self._make_llm(self.models[self.model_idx])
         self.agent = create_agent(model=self.model, tools=self.tools, system_prompt=self.system_msg)
 
+        print(f"[DEBUG] Using Model: {self.model}")
+
     # --------------------
     # Setup
     # --------------------
