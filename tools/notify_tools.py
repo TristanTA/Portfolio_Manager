@@ -98,8 +98,8 @@ def _get_latest_update_id_from_telegram() -> int:
 
 @tool
 def telegram_get_response(
-    timeout_seconds: int = 18000,
-    poll_interval_seconds: int = 300,
+    timeout_seconds: int = 3600,
+    poll_interval_seconds: int = 20,
     require_chat_id: bool = True,
 ) -> dict:
     """
