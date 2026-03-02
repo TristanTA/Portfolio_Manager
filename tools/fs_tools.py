@@ -119,21 +119,45 @@ def shell_run(cmd: Union[str, List[str]], cwd: Optional[str] = None, timeout_s: 
             "cwd": cwd,
         }
 
-@tool
-def fs_read(path_string: str) -> str:
+def fs_read(file_path: str, encoding: str = "utf-8", max_bytes: int = 2_000_000) -> Dict[str, Any]:
     """
-    Read content from a file.
-    Args: path_string: str (file to read)
-    Returns: package: str (entire file content)
+    Read a text file from the local repo workspace.
+
+    Args:
+        file_path: Path relative to repo root (or absolute within repo root).
+        encoding: Text encoding (default utf-8).
+        max_bytes: Safety limit to avoid huge reads.
+
+    Returns:
+        dict:
+          - on success: {"ok": True, "path": <input>, "abs_path": <abs>, "content": <str>}
+          - on error:   {"ok": False, "path": <input>, "error": <msg>}
     """
-    print(f"[Tools] File System Read {path}")
+    if not file_path:
+        return {"ok": False, "path": file_path, "error": "Missing file_path"}
+    repo_root = os.path.abspath(os.environ.get("REPO_ROOT", os.getcwd()))
+    abs_path = os.path.abspath(file_path)
+    if not abs_path.startswith(repo_root + os.sep):
+        abs_path = os.path.abspath(os.path.join(repo_root, file_path))
+    if not (abs_path == repo_root or abs_path.startswith(repo_root + os.sep)):
+        return {"ok": False, "path": file_path, "error": "Path escapes repo root"}
+
+    if not os.path.exists(abs_path):
+        return {"ok": False, "path": file_path, "error": f"File not found: {file_path}"}
+
+    if os.path.isdir(abs_path):
+        return {"ok": False, "path": file_path, "error": "Path is a directory"}
+
+    size = os.path.getsize(abs_path)
+    if size > max_bytes:
+        return {"ok": False, "path": file_path, "error": f"File too large ({size} bytes) > max_bytes={max_bytes}"}
+
     try:
-        path = Path(path_string)
-        with open(file=path, mode="r", encoding="utf-8") as file:
-            package = file.read()
-        return package
+        with open(abs_path, "r", encoding=encoding, errors="replace") as f:
+            content = f.read()
+        return {"ok": True, "path": file_path, "abs_path": abs_path, "content": content}
     except Exception as e:
-        return f"fs_read error: {type(e).__name__}: {e}"
+        return {"ok": False, "path": file_path, "error": f"{type(e).__name__}: {e}"}
 
 
 @tool
@@ -146,7 +170,6 @@ def fs_write(path_string: str, mode: str, content: str) -> Optional[str]:
         content: str (content to add)
     Returns: None if success, otherwise str error message
     """
-    print(f"[Tools] File System Write {path}")
     try:
         path = Path(path_string)
         with open(file=path, mode=mode, encoding="utf-8") as file:
@@ -165,7 +188,6 @@ def fs_list_dir(path_string: str) -> str:
     Returns:
         str: newline-separated entries or error message
     """
-    print(f"[Tools] File System List {path}")
     try:
         path = Path(path_string)
         if not path.exists():
@@ -188,7 +210,6 @@ def fs_exists(path_string: str) -> str:
     Returns:
         str: "true" / "false" or error message
     """
-    print(f"[Tools] File System Exists {path}")
     try:
         path = Path(path_string)
         return "true" if path.exists() else "false"
@@ -205,7 +226,6 @@ def fs_delete(path_string: str) -> Optional[str]:
     Returns:
         None if success, otherwise str error message
     """
-    print(f"[Tools] File System Delete {path}")
     try:
         path = Path(path_string)
 
