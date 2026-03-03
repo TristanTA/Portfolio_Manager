@@ -35,7 +35,6 @@ class MainAgent:
 
         # Model failover order
         self.models = [
-            {"provider": "openrouter", "model": "openrouter/free"},
             {"provider": "openrouter", "model": "z-ai/glm-4.5-air:free"},
             {"provider": "openrouter", "model": "openai/gpt-oss-20b:free"},
             {"provider": "openrouter", "model": "openai/gpt-oss-120b:free"},
