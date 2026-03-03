@@ -18,4 +18,4 @@ jobs:
       - name: Run weekly audit batch
         shell: cmd
         run: |
-          call run_weekly_audit.bat
+          call weekly_audit.py
