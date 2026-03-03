@@ -2,7 +2,8 @@ import os
 import time
 from typing import Optional
 
-from langchain_core.messages import AIMessage, HumanMessage
+import uuid
+from langchain_core.messages import AIMessage, ToolMessage, HumanMessage
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 from langchain.tools import tool
@@ -14,6 +15,8 @@ from tools.github_tools import github_list_tree, github_read_text_file, github_s
 from tools.memory_tools import memory_load, memory_save
 from tools.notify_tools import telegram_send, telegram_get_response
 from tools.repo_tools import repo_verify
+
+MAX_TOOL_ID = 40
 
 class MainAgent:
     def __init__(self):
@@ -149,6 +152,12 @@ class MainAgent:
                 if self.failover:
                     input_payload = {}
 
+                spec = self.models[self.model_idx]
+                if spec.get("provider") == "openai":
+                    state = self.checkpointer.get(thread_id)
+                    if state and "messages" in state:
+                        state["messages"] = self._normalize_tool_ids(state["messages"])
+
                 result = self.agent.invoke(
                     input_payload,
                     {"configurable": {"thread_id": thread_id}},
@@ -215,3 +224,27 @@ class MainAgent:
             "try again",
         ]
         return any(x in msg for x in retry_markers)
+
+    def _normalize_tool_ids(self, messages):
+        """
+        Ensure all tool call IDs are <= 40 chars (OpenAI requirement).
+        Mutates message objects safely.
+        """
+        id_map = {}
+
+        for m in messages:
+            if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
+                for tc in m.tool_calls:
+                    tc_id = tc.get("id")
+                    if isinstance(tc_id, str) and len(tc_id) > MAX_TOOL_ID:
+                        new_id = uuid.uuid4().hex  # 32 chars
+                        id_map[tc_id] = new_id
+                        tc["id"] = new_id
+
+        if id_map:
+            for m in messages:
+                if isinstance(m, ToolMessage):
+                    if m.tool_call_id in id_map:
+                        m.tool_call_id = id_map[m.tool_call_id]
+
+        return messages
