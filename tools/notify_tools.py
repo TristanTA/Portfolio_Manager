@@ -5,8 +5,6 @@ import time
 
 from langchain.tools import tool
 
-
-@tool
 def telegram_send(text: str) -> dict:
     """
     Send a message via Telegram bot.
