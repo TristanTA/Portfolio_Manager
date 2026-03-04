@@ -81,13 +81,10 @@ Constraints
 def main():
     load_dotenv()
 
-    thread_id = str(uuid.uuid4())
-    print("[Debug] Thread Id:", thread_id)
-
     agent = MainAgent()
     print("[Debug] Agent created. Messaging Agent now . . .")
 
-    agent.message(user_msg=WEEKLY_INSTRUCTIONS, thread_id=thread_id)
+    agent.message(user_msg=WEEKLY_INSTRUCTIONS)
     print("[Debug] Message complete.")
 
 if __name__ == "__main__":

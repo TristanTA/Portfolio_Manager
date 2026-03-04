@@ -193,7 +193,7 @@ class MainAgent:
     # Chat
     # --------------------
 
-    def message(self, user_msg: str, thread_id: str = "default") -> str:
+    def message(self, user_msg: str, thread_id: int = 0) -> str:
         if self.debug:
             print(f"[chat] recv thread={thread_id}")
 
